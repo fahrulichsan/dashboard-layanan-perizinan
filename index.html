@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Dashboard Layanan Perizinan & Kunjungan – MPP Kota Pekanbaru</title>
+<style>
+  :root {
+    --green-900: #0b4d1c;
+    --green-700: #14762c;
+    --green-500: #2ea043;
+    --green-300: #7cc68a;
+    --green-100: #e6f4e8;
+    --gold: #f2c230;
+    --gold-soft: #e8d38a;
+    --ink: #17301d;
+    --muted: #5d7364;
+    --paper: #f4f7f3;
+    --card: #ffffff;
+    --line: #d5e2d7;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: "Segoe UI", system-ui, -apple-system, Roboto, Arial, sans-serif;
+    background: var(--paper);
+    color: var(--ink);
+    line-height: 1.45;
+  }
+  .wrap { max-width: 1100px; margin: 0 auto; padding: 0 20px; }
+
+  /* Header */
+  header {
+    background: linear-gradient(135deg, var(--green-900), var(--green-700));
+    color: #fff;
+    padding: 36px 0 28px;
+  }
+  header .wrap { display: flex; flex-wrap: wrap; gap: 16px; align-items: flex-end; justify-content: space-between; }
+  .brand { display: flex; align-items: center; gap: 16px; }
+  .brand img { width: 72px; height: 72px; object-fit: contain; flex: none; }
+  header h1 { font-size: clamp(1.6rem, 4vw, 2.4rem); font-weight: 800; }
+  header p { opacity: .85; margin-top: 4px; }
+  .date {
+    background: rgba(255,255,255,.14);
+    border: 1px solid rgba(255,255,255,.35);
+    border-radius: 999px;
+    padding: 8px 20px;
+    font-weight: 600;
+  }
+
+  section { padding: 32px 0 0; }
+  h2 {
+    font-size: 1.35rem;
+    color: var(--green-900);
+    margin-bottom: 16px;
+    padding-left: 12px;
+    border-left: 5px solid var(--gold);
+  }
+
+  .card {
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    padding: 20px;
+  }
+  .card h3 { font-size: .95rem; color: var(--muted); font-weight: 600; margin-bottom: 12px; }
+
+  /* Ringkasan atas */
+  .kpis {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+    gap: 12px;
+    margin-top: 30px; /* menumpuk sedikit ke header */
+  }
+  .kpi {
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    padding: 14px 16px;
+  }
+  .kpi .label { font-size: .8rem; color: var(--muted); font-weight: 600; }
+  .kpi .value { font-size: 1.6rem; font-weight: 800; color: var(--green-900); line-height: 1.2; }
+  .kpi .value small { font-size: .85rem; font-weight: 700; }
+  .kpi.main { background: var(--green-700); border-color: var(--green-700); }
+  .kpi.main .label { color: #d6f0da; }
+  .kpi.main .value { color: #fff; font-size: 2.4rem; }
+
+  /* Grid perizinan */
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .stackcol { display: grid; gap: 16px; }
+  .full { grid-column: 1 / -1; }
+
+  .metric { background: var(--green-100); border-radius: 10px; padding: 12px 16px; }
+  .metric .label { font-size: .8rem; color: var(--muted); font-weight: 600; }
+  .metric .value { font-size: 1.4rem; font-weight: 800; color: var(--green-900); }
+  .metric .value small { font-size: .85rem; font-weight: 700; }
+  .metric-pair { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+
+  /* Donut */
+  .donut-row { display: flex; align-items: center; gap: 24px; flex-wrap: wrap; }
+  .donut {
+    width: 170px; aspect-ratio: 1; flex: none;
+    border-radius: 50%;
+    position: relative;
+    display: grid; place-items: center;
+  }
+  .donut::after {
+    content: ""; position: absolute; inset: 30px;
+    background: var(--card); border-radius: 50%;
+  }
+  .donut .center { position: relative; z-index: 1; text-align: center; line-height: 1.1; }
+  .donut .center b { display: block; font-size: 1.8rem; font-weight: 800; color: var(--green-900); }
+  .donut .center span { font-size: .75rem; color: var(--muted); }
+  .legend { list-style: none; flex: 1; min-width: 180px; }
+  .legend li { display: flex; align-items: center; gap: 8px; padding: 4px 0; font-size: .92rem; }
+  .legend .sw { width: 12px; height: 12px; border-radius: 3px; background: var(--c); flex: none; }
+  .legend .v { margin-left: auto; font-weight: 700; padding-left: 12px; }
+  .legend .p { color: var(--muted); font-size: .8rem; min-width: 44px; text-align: right; }
+
+  /* Investasi + stacked bar */
+  .invest-block { background: var(--green-100); border-radius: 10px; padding: 16px; }
+  .invest-block .label { font-size: .85rem; font-weight: 700; color: var(--muted); }
+  .invest-block .total { font-size: 1.8rem; font-weight: 800; color: var(--green-900); margin: 2px 0 10px; }
+  .invest-block dl { display: grid; grid-template-columns: auto 1fr auto; gap: 4px 12px; font-size: .92rem; }
+  .invest-block dt { font-weight: 700; color: var(--green-700); }
+  .invest-block dt::before {
+    content: ""; display: inline-block; width: 10px; height: 10px; border-radius: 3px;
+    background: var(--c); margin-right: 6px;
+  }
+  .invest-block dd:nth-of-type(odd) { color: var(--muted); }
+  .invest-block dd:nth-of-type(even) { text-align: right; font-weight: 700; }
+  .stack { display: flex; height: 26px; border-radius: 8px; overflow: hidden; background: #fff; margin-top: 14px; }
+  .stack i {
+    width: var(--w); background: var(--c);
+    display: grid; place-items: center;
+    font-style: normal; font-size: .75rem; font-weight: 700; color: #fff;
+  }
+  .stack i.dark { color: var(--ink); }
+  .stack-note { font-size: .75rem; color: var(--muted); margin-top: 4px; }
+
+  /* Daftar kunjungan */
+  .visitors {
+    list-style: none;
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px 28px;
+  }
+  .visitors li {
+    display: grid;
+    grid-template-columns: 40px 1fr auto;
+    column-gap: 12px;
+    align-items: center;
+    padding: 6px 0;
+  }
+  .logo {
+  grid-row: span 2;
+  width: 40px; height: 40px; border-radius: 50%;
+  background: #fff;
+  border: 1px solid var(--line);
+  display: grid; place-items: center;
+  overflow: hidden; padding: 3px;
+  }
+.logo img { width: 100%; height: 100%; object-fit: contain; }
+  .name { font-weight: 700; font-size: .95rem; }
+  .name small { display: block; font-weight: 500; color: var(--muted); font-size: .72rem; }
+  .count { font-weight: 800; font-size: 1.15rem; color: var(--green-900); grid-row: span 2; }
+  .bar { grid-column: 2; height: 6px; border-radius: 3px; background: var(--green-100); margin-top: 4px; overflow: hidden; }
+  .bar i { display: block; height: 100%; min-width: 4px; width: var(--w); background: var(--green-500); border-radius: 3px; }
+
+  footer { padding: 36px 0 40px; color: var(--muted); font-size: .85rem; text-align: center; }
+
+  @media (max-width: 760px) {
+    .grid-2, .visitors, .metric-pair { grid-template-columns: 1fr; }
+    .kpis { margin-top: -16px; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="wrap">
+    <div class="brand">
+      <img src="logo_mpp.png" alt="Logo Mal Pelayanan Publik Kota Pekanbaru">
+      <div>
+        <h1>Mal Pelayanan Publik</h1>
+        <p>Kota Pekanbaru · Layanan Perizinan &amp; Kunjungan</p>
+      </div>
+    </div>
+    <div class="date">Jum'at, 13 November 2026</div>
+  </div>
+</header>
+
+<main class="wrap">
+
+  <!-- ======== RINGKASAN HARI INI ======== -->
+  <div class="kpis">
+    <div class="kpi main"><div class="label">Izin terbit</div><div class="value">79</div></div>
+    <div class="kpi"><div class="label">Pengunjung</div><div class="value">584 <small>orang</small></div></div>
+    <div class="kpi"><div class="label">Retribusi</div><div class="value">Rp 3,206 <small>Jt</small></div></div>
+    <div class="kpi"><div class="label">Tenaga kerja terserap</div><div class="value">5 <small>orang</small></div></div>
+    <div class="kpi"><div class="label">Potensi investasi</div><div class="value">Rp 34,704 <small>M</small></div></div>
+  </div>
+
+  <!-- ======== LAYANAN PERIZINAN ======== -->
+  <section>
+    <h2>Layanan Perizinan DPMPTSP</h2>
+
+    <div class="grid-2">
+
+      <div class="card">
+        <h3>Komposisi izin terbit hari ini</h3>
+        <div class="donut-row">
+          <div class="donut" role="img" aria-label="Komposisi 79 izin: NIB 70, PBG 2, Lainnya 7"
+               style="background: conic-gradient(
+                 var(--green-900) 0 88.6%,
+                 var(--gold) 88.6% 91.1%,
+                 var(--green-500) 91.1% 100%);">
+            <div class="center"><b>79</b><span>izin</span></div>
+          </div>
+          <ul class="legend">
+            <li><i class="sw" style="--c:var(--green-900)"></i>NIB<span class="v">70</span><span class="p">88,6%</span></li>
+            <li><i class="sw" style="--c:var(--gold)"></i>PBG<span class="v">2</span><span class="p">2,5%</span></li>
+            <li><i class="sw" style="--c:var(--green-500)"></i>Lainnya<span class="v">7</span><span class="p">8,9%</span></li>
+            <li><i class="sw" style="--c:var(--line)"></i>Izin Kesehatan<span class="v">0</span><span class="p">0%</span></li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="stackcol">
+        <div class="card">
+          <h3>Penerimaan retribusi</h3>
+          <div class="metric-pair">
+            <div class="metric"><div class="label">Hari ini</div><div class="value">Rp 3,206 <small>Jt</small></div></div>
+            <div class="metric"><div class="label">Januari s.d. sekarang</div><div class="value">Rp 10,769 <small>M</small></div></div>
+          </div>
+        </div>
+        <div class="card">
+          <h3>Penyerapan tenaga kerja</h3>
+          <div class="metric-pair">
+            <div class="metric"><div class="label">Hari ini</div><div class="value">5 <small>orang</small></div></div>
+            <div class="metric"><div class="label">Januari s.d. sekarang</div><div class="value">4.429 <small>orang</small></div></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card full">
+        <h3>Potensi investasi</h3>
+        <div class="grid-2">
+          <div class="invest-block">
+            <div class="label">Hari ini</div>
+            <div class="total">Rp 34,704 M</div>
+            <dl>
+              <dt style="--c:var(--gold)">PMA</dt><dd>1 Proyek</dd><dd>Rp 12,03 M</dd>
+              <dt style="--c:var(--green-700)">PMDN</dt><dd>169 Proyek</dd><dd>Rp 22,67 M</dd>
+            </dl>
+            <div class="stack" role="img" aria-label="PMA 34,7 persen, PMDN 65,3 persen">
+              <i style="--w:34.7%; --c:var(--gold)" class="dark">34,7%</i>
+              <i style="--w:65.3%; --c:var(--green-700)">65,3%</i>
+            </div>
+            <div class="stack-note">Porsi nilai investasi</div>
+          </div>
+          <div class="invest-block">
+            <div class="label">Januari s.d. sekarang</div>
+            <div class="total">Rp 13,272 T</div>
+            <dl>
+              <dt style="--c:var(--gold)">PMA</dt><dd>126 Proyek</dd><dd>Rp 2,302 T</dd>
+              <dt style="--c:var(--green-700)">PMDN</dt><dd>37.164 Proyek</dd><dd>Rp 10,970 T</dd>
+            </dl>
+            <div class="stack" role="img" aria-label="PMA 17,3 persen, PMDN 82,7 persen">
+              <i style="--w:17.3%; --c:var(--gold)" class="dark">17,3%</i>
+              <i style="--w:82.7%; --c:var(--green-700)">82,7%</i>
+            </div>
+            <div class="stack-note">Porsi nilai investasi</div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ======== KUNJUNGAN LAYANAN ======== -->
+  <section>
+    <h2>Kunjungan Layanan</h2>
+
+    <div class="card" style="margin-bottom:16px">
+      <h3>Porsi pengunjung per instansi</h3>
+      <div class="donut-row">
+        <div class="donut" role="img" aria-label="Porsi 584 pengunjung: Disdukcapil 56,7 persen"
+             style="background: conic-gradient(
+               var(--green-900) 0 56.7%,
+               var(--green-700) 56.7% 66.1%,
+               var(--green-500) 66.1% 73.8%,
+               var(--green-300) 73.8% 80.8%,
+               var(--gold) 80.8% 86.1%,
+               var(--gold-soft) 86.1% 90.7%,
+               var(--line) 90.7% 100%);">
+          <div class="center"><b>584</b><span>pengunjung</span></div>
+        </div>
+        <ul class="legend">
+          <li><i class="sw" style="--c:var(--green-900)"></i>Disdukcapil<span class="v">331</span><span class="p">56,7%</span></li>
+          <li><i class="sw" style="--c:var(--green-700)"></i>Polda<span class="v">55</span><span class="p">9,4%</span></li>
+          <li><i class="sw" style="--c:var(--green-500)"></i>BPJS Kesehatan<span class="v">45</span><span class="p">7,7%</span></li>
+          <li><i class="sw" style="--c:var(--green-300)"></i>DPMPTSP<span class="v">41</span><span class="p">7,0%</span></li>
+          <li><i class="sw" style="--c:var(--gold)"></i>BRI<span class="v">31</span><span class="p">5,3%</span></li>
+          <li><i class="sw" style="--c:var(--gold-soft)"></i>Samsat<span class="v">27</span><span class="p">4,6%</span></li>
+          <li><i class="sw" style="--c:var(--line)"></i>Lainnya (11 instansi)<span class="v">54</span><span class="p">9,2%</span></li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>Jumlah pengunjung semua instansi</h3>
+      <ul class="visitors">
+        <li><span class="logo"><img src="logos/disdukcapil.png" alt="Disdukcapil"></span><span class="name">Disdukcapil<small>Kota Pekanbaru</small></span><span class="count">331</span><span class="bar"><i style="--w:100%"></i></span></li>
+        <li><span class="logo"><img src="logos/polda.png" alt="Polda"></span><span class="name">Polda<small>Riau</small></span><span class="count">55</span><span class="bar"><i style="--w:16.6%"></i></span></li>
+        <li><span class="logo"><img src="logos/bpjs.webp" alt="BPJS"></span><span class="name">BPJS Kesehatan<small></small></span><span class="count">45</span><span class="bar"><i style="--w:13.6%"></i></span></li>
+        <li><span class="logo"><img src="logos/dpm.png" alt="DPM"></span><span class="name">DPMPTSP<small>Kota Pekanbaru</small></span><span class="count">41</span><span class="bar"><i style="--w:12.4%"></i></span></li>
+        <li><span class="logo"><img src="logos/bri.webp" alt="BRI"></span><span class="name">BRI<small>Bank Rakyat Indonesia</small></span><span class="count">31</span><span class="bar"><i style="--w:9.4%"></i></span></li>
+        <li><span class="logo"><img src="logos/samsat.png" alt="Samsat"></span><span class="name">Samsat<small>Bapenda Prov. Riau – Jasa Raharja</small></span><span class="count">27</span><span class="bar"><i style="--w:8.2%"></i></span></li>
+        <li><span class="logo"><img src="logos/imi.png" alt="Imi"></span><span class="name">Imigrasi<small>Kelas I TPI Pekanbaru</small></span><span class="count">11</span><span class="bar"><i style="--w:3.3%"></i></span></li>
+        <li><span class="logo"><img src="logos/dlhk.png" alt="DLHK"></span><span class="name">DLHK<small>Kota Pekanbaru</small></span><span class="count">9</span><span class="bar"><i style="--w:2.7%"></i></span></li>
+        <li><span class="logo"><img src="logos/djp.png" alt="DJP"></span><span class="name">DJP<small>Direktorat Jenderal Pajak</small></span><span class="count">9</span><span class="bar"><i style="--w:2.7%"></i></span></li>
+        <li><span class="logo"><img src="logos/pupr.png" alt="PUPR"></span><span class="name">Dinas PUPR<small>Kota Pekanbaru</small></span><span class="count">9</span><span class="bar"><i style="--w:2.7%"></i></span></li>
+        <li><span class="logo"><img src="logos/bapenda.png" alt="Bapenda"></span><span class="name">Bapenda<small>Kota Pekanbaru</small></span><span class="count">6</span><span class="bar"><i style="--w:1.8%"></i></span></li>
+        <li><span class="logo"><img src="logos/bpn.png" alt="BPN"></span><span class="name">BPN<small>Kota Pekanbaru</small></span><span class="count">5</span><span class="bar"><i style="--w:1.5%"></i></span></li>
+        <li><span class="logo"><img src="logos/lpse.png" alt="LPSE"></span><span class="name">LPSE<small>Kota Pekanbaru</small></span><span class="count">1</span><span class="bar"><i style="--w:0.3%"></i></span></li>
+        <li><span class="logo"><img src="logos/dinkes.png" alt="Dinkes"></span><span class="name">Dinkes<small>Kota Pekanbaru</small></span><span class="count">1</span><span class="bar"><i style="--w:0.3%"></i></span></li>
+        <li><span class="logo"><img src="logos/brk.png" alt="BRK"></span><span class="name">BRK<small>Syariah</small></span><span class="count">1</span><span class="bar"><i style="--w:0.3%"></i></span></li>
+        <li><span class="logo"><img src="logos/bpjstk.webp" alt="BPJS TK"></span><span class="name">BPJS Ketenagakerjaan<small></small></span><span class="count">1</span><span class="bar"><i style="--w:0.3%"></i></span></li>
+        <li><span class="logo"><img src="logos/dishub.png" alt="Dishub"></span><span class="name">Dishub<small>Kota Pekanbaru</small></span><span class="count">1</span><span class="bar"><i style="--w:0.3%"></i></span></li>
+      </ul>
+    </div>
+  </section>
+
+</main>
+
+<footer>Salam CERDAS · #melayanipekanbaru</footer>
+
+</body>
+</html>
