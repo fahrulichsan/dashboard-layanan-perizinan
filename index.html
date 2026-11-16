@@ -166,11 +166,59 @@
   .bar { grid-column: 2; height: 6px; border-radius: 3px; background: var(--green-100); margin-top: 4px; overflow: hidden; }
   .bar i { display: block; height: 100%; min-width: 4px; width: var(--w); background: var(--green-500); border-radius: 3px; }
 
+  /* Rekap bulan + pemilih tanggal */
+  section .kpis { margin-top: 0; }
+  .note { font-size: .85rem; color: var(--muted); margin-top: 10px; }
+  .chart-head { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; }
+  .chart-head h3 { margin: 0; }
+  .tabs { display: inline-flex; background: var(--green-100); border-radius: 999px; padding: 3px; }
+  .tabs button {
+    border: 0; background: transparent; font: inherit; font-size: .85rem; font-weight: 600;
+    color: var(--muted); padding: 6px 14px; border-radius: 999px; cursor: pointer;
+  }
+  .tabs button[aria-pressed="true"] { background: var(--green-700); color: #fff; }
+  .days { display: flex; gap: 4px; align-items: flex-end; height: 200px; }
+  .day {
+    flex: 1; min-width: 0; height: 100%;
+    display: flex; flex-direction: column; justify-content: flex-end; align-items: center; gap: 4px;
+    border: 0; background: transparent; font: inherit; padding: 0 0 4px; border-radius: 8px; cursor: pointer;
+  }
+  .day .val { font-size: .68rem; font-weight: 700; color: var(--green-900); min-height: 1em; }
+  .day .col { width: 100%; max-width: 34px; height: var(--h); min-height: 3px; background: var(--green-300); border-radius: 6px 6px 0 0; }
+  .day .num { font-size: .75rem; font-weight: 600; color: var(--muted); }
+  .day.weekend .num { color: #b3453a; }
+  .day:hover:not(:disabled) .col { background: var(--green-500); }
+  .day[aria-pressed="true"] { background: var(--green-100); }
+  .day[aria-pressed="true"] .col { background: var(--green-700); }
+  .day[aria-pressed="true"] .num { color: var(--green-900); font-weight: 800; }
+  .day:disabled { cursor: default; }
+  .day.kosong .col { background: var(--line); }
+  .day:focus-visible, .tabs button:focus-visible { outline: 2px solid var(--green-700); outline-offset: 2px; }
+
+  /* Pemilih tanggal */
+  .picker { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+  .picker button {
+    width: 38px; height: 38px; border: 1px solid var(--line); background: #fff; border-radius: 50%;
+    font-size: 1.2rem; line-height: 1; color: var(--green-900); cursor: pointer;
+  }
+  .picker button:hover:not(:disabled) { background: var(--green-100); }
+  .picker button:disabled { opacity: .35; cursor: default; }
+  .picker label { display: flex; align-items: center; gap: 8px; font-weight: 600; font-size: .9rem; color: var(--muted); }
+  .picker input[type="date"] {
+    font: inherit; font-weight: 700; color: var(--green-900);
+    border: 1px solid var(--line); border-radius: 8px; padding: 7px 10px; background: #fff;
+  }
+  .picker button:focus-visible, .picker input:focus-visible { outline: 2px solid var(--green-700); outline-offset: 2px; }
+  .note.warn { color: #7a5200; background: #fff6dc; border: 1px solid #f0dca0; border-radius: 8px; padding: 8px 12px; }
+
   footer { padding: 36px 0 40px; color: var(--muted); font-size: .85rem; text-align: center; }
 
   @media (max-width: 760px) {
     .grid-2, .visitors, .metric-pair { grid-template-columns: 1fr; }
     .kpis { margin-top: -16px; }
+    .days { gap: 2px; }
+    .day .val { display: none; }
+    .day .num { font-size: .62rem; }
   }
 </style>
 </head>
@@ -185,20 +233,45 @@
         <p>Kota Pekanbaru · Layanan Perizinan &amp; Kunjungan</p>
       </div>
     </div>
-    <div class="date">Jum'at, 13 November 2026</div>
+    <div class="date" id="periode"></div>
   </div>
 </header>
 
 <main class="wrap">
 
-  <!-- ======== RINGKASAN HARI INI ======== -->
-  <div class="kpis">
-    <div class="kpi main"><div class="label">Izin terbit</div><div class="value">79</div></div>
-    <div class="kpi"><div class="label">Pengunjung</div><div class="value">584 <small>orang</small></div></div>
-    <div class="kpi"><div class="label">Retribusi</div><div class="value">Rp 3,206 <small>Jt</small></div></div>
-    <div class="kpi"><div class="label">Tenaga kerja terserap</div><div class="value">5 <small>orang</small></div></div>
-    <div class="kpi"><div class="label">Potensi investasi</div><div class="value">Rp 34,704 <small>M</small></div></div>
-  </div>
+  <noscript><p class="note">Aktifkan JavaScript untuk menampilkan data dashboard.</p></noscript>
+
+  <!-- ======== PILIH TANGGAL ======== -->
+  <section>
+    <h2>Pilih tanggal</h2>
+
+    <div class="card picker">
+      <button type="button" id="tgl-prev" aria-label="Data sebelumnya" title="Tanggal sebelumnya yang ada datanya">‹</button>
+      <label>Tanggal <input type="date" id="tgl-input"></label>
+      <button type="button" id="tgl-next" aria-label="Data berikutnya" title="Tanggal berikutnya yang ada datanya">›</button>
+    </div>
+    <p class="note warn" id="tgl-note" hidden></p>
+
+    <div class="card" style="margin-top:16px">
+      <div class="chart-head">
+        <h3 id="chart-title">Izin terbit per hari</h3>
+        <div class="tabs" role="group" aria-label="Pilih data grafik">
+          <button type="button" data-metric="izin" aria-pressed="true">Izin terbit</button>
+          <button type="button" data-metric="pengunjung" aria-pressed="false">Pengunjung</button>
+        </div>
+      </div>
+      <div class="days" id="days"></div>
+      <p class="note">Klik batang untuk membuka tanggalnya. Sabtu dan Minggu bertanda merah.</p>
+    </div>
+  </section>
+
+  <div id="detail">
+
+  <!-- ======== DETAIL HARIAN ======== -->
+  <section>
+    <h2 id="detail-title">Detail harian</h2>
+    <div class="kpis" id="kpi-harian"></div>
+  </section>
 
   <!-- ======== LAYANAN PERIZINAN ======== -->
   <section>
@@ -207,21 +280,12 @@
     <div class="grid-2">
 
       <div class="card">
-        <h3>Komposisi izin terbit hari ini</h3>
+        <h3>Komposisi izin terbit</h3>
         <div class="donut-row">
-          <div class="donut" role="img" aria-label="Komposisi 79 izin: NIB 70, PBG 2, Lainnya 7"
-               style="background: conic-gradient(
-                 var(--green-900) 0 88.6%,
-                 var(--gold) 88.6% 91.1%,
-                 var(--green-500) 91.1% 100%);">
-            <div class="center"><b>79</b><span>izin</span></div>
+          <div class="donut" id="izin-donut" role="img">
+            <div class="center"><b id="izin-total"></b><span>izin</span></div>
           </div>
-          <ul class="legend">
-            <li><i class="sw" style="--c:var(--green-900)"></i>NIB<span class="v">70</span><span class="p">88,6%</span></li>
-            <li><i class="sw" style="--c:var(--gold)"></i>PBG<span class="v">2</span><span class="p">2,5%</span></li>
-            <li><i class="sw" style="--c:var(--green-500)"></i>Lainnya<span class="v">7</span><span class="p">8,9%</span></li>
-            <li><i class="sw" style="--c:var(--line)"></i>Izin Kesehatan<span class="v">0</span><span class="p">0%</span></li>
-          </ul>
+          <ul class="legend" id="izin-legend"></ul>
         </div>
       </div>
 
@@ -229,15 +293,15 @@
         <div class="card">
           <h3>Penerimaan retribusi</h3>
           <div class="metric-pair">
-            <div class="metric"><div class="label">Hari ini</div><div class="value">Rp 3,206 <small>Jt</small></div></div>
-            <div class="metric"><div class="label">Januari s.d. sekarang</div><div class="value">Rp 10,769 <small>M</small></div></div>
+            <div class="metric"><div class="label">Harian</div><div class="value" id="retribusi-hari"></div></div>
+            <div class="metric"><div class="label">Januari s.d. tanggal ini</div><div class="value" id="retribusi-ytd"></div></div>
           </div>
         </div>
         <div class="card">
           <h3>Penyerapan tenaga kerja</h3>
           <div class="metric-pair">
-            <div class="metric"><div class="label">Hari ini</div><div class="value">5 <small>orang</small></div></div>
-            <div class="metric"><div class="label">Januari s.d. sekarang</div><div class="value">4.429 <small>orang</small></div></div>
+            <div class="metric"><div class="label">Harian</div><div class="value" id="naker-hari"></div></div>
+            <div class="metric"><div class="label">Januari s.d. tanggal ini</div><div class="value" id="naker-ytd"></div></div>
           </div>
         </div>
       </div>
@@ -245,32 +309,8 @@
       <div class="card full">
         <h3>Potensi investasi</h3>
         <div class="grid-2">
-          <div class="invest-block">
-            <div class="label">Hari ini</div>
-            <div class="total">Rp 34,704 M</div>
-            <dl>
-              <dt style="--c:var(--gold)">PMA</dt><dd>1 Proyek</dd><dd>Rp 12,03 M</dd>
-              <dt style="--c:var(--green-700)">PMDN</dt><dd>169 Proyek</dd><dd>Rp 22,67 M</dd>
-            </dl>
-            <div class="stack" role="img" aria-label="PMA 34,7 persen, PMDN 65,3 persen">
-              <i style="--w:34.7%; --c:var(--gold)" class="dark">34,7%</i>
-              <i style="--w:65.3%; --c:var(--green-700)">65,3%</i>
-            </div>
-            <div class="stack-note">Porsi nilai investasi</div>
-          </div>
-          <div class="invest-block">
-            <div class="label">Januari s.d. sekarang</div>
-            <div class="total">Rp 13,272 T</div>
-            <dl>
-              <dt style="--c:var(--gold)">PMA</dt><dd>126 Proyek</dd><dd>Rp 2,302 T</dd>
-              <dt style="--c:var(--green-700)">PMDN</dt><dd>37.164 Proyek</dd><dd>Rp 10,970 T</dd>
-            </dl>
-            <div class="stack" role="img" aria-label="PMA 17,3 persen, PMDN 82,7 persen">
-              <i style="--w:17.3%; --c:var(--gold)" class="dark">17,3%</i>
-              <i style="--w:82.7%; --c:var(--green-700)">82,7%</i>
-            </div>
-            <div class="stack-note">Porsi nilai investasi</div>
-          </div>
+          <div class="invest-block" id="inv-hari"></div>
+          <div class="invest-block" id="inv-ytd"></div>
         </div>
       </div>
 
@@ -284,56 +324,26 @@
     <div class="card" style="margin-bottom:16px">
       <h3>Porsi pengunjung per instansi</h3>
       <div class="donut-row">
-        <div class="donut" role="img" aria-label="Porsi 584 pengunjung: Disdukcapil 56,7 persen"
-             style="background: conic-gradient(
-               var(--green-900) 0 56.7%,
-               var(--green-700) 56.7% 66.1%,
-               var(--green-500) 66.1% 73.8%,
-               var(--green-300) 73.8% 80.8%,
-               var(--gold) 80.8% 86.1%,
-               var(--gold-soft) 86.1% 90.7%,
-               var(--line) 90.7% 100%);">
-          <div class="center"><b>584</b><span>pengunjung</span></div>
+        <div class="donut" id="pengunjung-donut" role="img">
+          <div class="center"><b id="pengunjung-total"></b><span>pengunjung</span></div>
         </div>
-        <ul class="legend">
-          <li><i class="sw" style="--c:var(--green-900)"></i>Disdukcapil<span class="v">331</span><span class="p">56,7%</span></li>
-          <li><i class="sw" style="--c:var(--green-700)"></i>Polda<span class="v">55</span><span class="p">9,4%</span></li>
-          <li><i class="sw" style="--c:var(--green-500)"></i>BPJS Kesehatan<span class="v">45</span><span class="p">7,7%</span></li>
-          <li><i class="sw" style="--c:var(--green-300)"></i>DPMPTSP<span class="v">41</span><span class="p">7,0%</span></li>
-          <li><i class="sw" style="--c:var(--gold)"></i>BRI<span class="v">31</span><span class="p">5,3%</span></li>
-          <li><i class="sw" style="--c:var(--gold-soft)"></i>Samsat<span class="v">27</span><span class="p">4,6%</span></li>
-          <li><i class="sw" style="--c:var(--line)"></i>Lainnya (11 instansi)<span class="v">54</span><span class="p">9,2%</span></li>
-        </ul>
+        <ul class="legend" id="pengunjung-legend"></ul>
       </div>
     </div>
 
     <div class="card">
       <h3>Jumlah pengunjung semua instansi</h3>
-      <ul class="visitors">
-        <li><span class="logo"><img src="logos/disdukcapil.png" alt="Disdukcapil"></span><span class="name">Disdukcapil<small>Kota Pekanbaru</small></span><span class="count">331</span><span class="bar"><i style="--w:100%"></i></span></li>
-        <li><span class="logo"><img src="logos/polda.png" alt="Polda"></span><span class="name">Polda<small>Riau</small></span><span class="count">55</span><span class="bar"><i style="--w:16.6%"></i></span></li>
-        <li><span class="logo"><img src="logos/bpjs.webp" alt="BPJS"></span><span class="name">BPJS Kesehatan<small></small></span><span class="count">45</span><span class="bar"><i style="--w:13.6%"></i></span></li>
-        <li><span class="logo"><img src="logos/dpm.png" alt="DPM"></span><span class="name">DPMPTSP<small>Kota Pekanbaru</small></span><span class="count">41</span><span class="bar"><i style="--w:12.4%"></i></span></li>
-        <li><span class="logo"><img src="logos/bri.webp" alt="BRI"></span><span class="name">BRI<small>Bank Rakyat Indonesia</small></span><span class="count">31</span><span class="bar"><i style="--w:9.4%"></i></span></li>
-        <li><span class="logo"><img src="logos/samsat.png" alt="Samsat"></span><span class="name">Samsat<small>Bapenda Prov. Riau – Jasa Raharja</small></span><span class="count">27</span><span class="bar"><i style="--w:8.2%"></i></span></li>
-        <li><span class="logo"><img src="logos/imi.png" alt="Imi"></span><span class="name">Imigrasi<small>Kelas I TPI Pekanbaru</small></span><span class="count">11</span><span class="bar"><i style="--w:3.3%"></i></span></li>
-        <li><span class="logo"><img src="logos/dlhk.png" alt="DLHK"></span><span class="name">DLHK<small>Kota Pekanbaru</small></span><span class="count">9</span><span class="bar"><i style="--w:2.7%"></i></span></li>
-        <li><span class="logo"><img src="logos/djp.png" alt="DJP"></span><span class="name">DJP<small>Direktorat Jenderal Pajak</small></span><span class="count">9</span><span class="bar"><i style="--w:2.7%"></i></span></li>
-        <li><span class="logo"><img src="logos/pupr.png" alt="PUPR"></span><span class="name">Dinas PUPR<small>Kota Pekanbaru</small></span><span class="count">9</span><span class="bar"><i style="--w:2.7%"></i></span></li>
-        <li><span class="logo"><img src="logos/bapenda.png" alt="Bapenda"></span><span class="name">Bapenda<small>Kota Pekanbaru</small></span><span class="count">6</span><span class="bar"><i style="--w:1.8%"></i></span></li>
-        <li><span class="logo"><img src="logos/bpn.png" alt="BPN"></span><span class="name">BPN<small>Kota Pekanbaru</small></span><span class="count">5</span><span class="bar"><i style="--w:1.5%"></i></span></li>
-        <li><span class="logo"><img src="logos/lpse.png" alt="LPSE"></span><span class="name">LPSE<small>Kota Pekanbaru</small></span><span class="count">1</span><span class="bar"><i style="--w:0.3%"></i></span></li>
-        <li><span class="logo"><img src="logos/dinkes.png" alt="Dinkes"></span><span class="name">Dinkes<small>Kota Pekanbaru</small></span><span class="count">1</span><span class="bar"><i style="--w:0.3%"></i></span></li>
-        <li><span class="logo"><img src="logos/brk.png" alt="BRK"></span><span class="name">BRK<small>Syariah</small></span><span class="count">1</span><span class="bar"><i style="--w:0.3%"></i></span></li>
-        <li><span class="logo"><img src="logos/bpjstk.webp" alt="BPJS TK"></span><span class="name">BPJS Ketenagakerjaan<small></small></span><span class="count">1</span><span class="bar"><i style="--w:0.3%"></i></span></li>
-        <li><span class="logo"><img src="logos/dishub.png" alt="Dishub"></span><span class="name">Dishub<small>Kota Pekanbaru</small></span><span class="count">1</span><span class="bar"><i style="--w:0.3%"></i></span></li>
-      </ul>
+      <ul class="visitors" id="pengunjung-list"></ul>
     </div>
   </section>
+
+  </div>
 
 </main>
 
 <footer>Salam CERDAS · #melayanipekanbaru</footer>
 
+<script src="data.js"></script>
+<script src="app.js"></script>
 </body>
 </html>
